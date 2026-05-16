@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+
+{% block title %}Scan URL{% endblock %}
+{% block subtitle %}Check if a link is safe, suspicious or malicious.{% endblock %}
+
+{% block styles %}
+.scan-panel { text-align: center; max-width: 600px; margin: 0 auto; }
+.scan-panel p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; margin-bottom: 20px; }
+.input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+.input-group input { flex: 1; background-color: var(--bg-main); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
+.input-group input:focus { border-color: var(--accent-blue); }
+.input-group button { background-color: var(--accent-blue); color: #fff; border: none; padding: 0 24px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+.input-group button:hover { background-color: var(--accent-blue-hover); }
+
+/* Results Box */
+.result-box { background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: none; text-align: left; }
+.result-box.malicious { border-color: rgba(239, 68, 68, 0.5); background-color: rgba(239, 68, 68, 0.05); }
+.result-box.safe { border-color: rgba(16, 185, 129, 0.5); background-color: rgba(16, 185, 129, 0.05); }
+
+.result-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.result-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.result-box.malicious .result-icon { background-color: var(--accent-red-bg); color: var(--accent-red); }
+.result-box.safe .result-icon { background-color: var(--accent-green-bg); color: var(--accent-green); }
+.result-title h3 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.result-box.malicious .result-title h3 { color: var(--accent-red); }
+.result-box.safe .result-title h3 { color: var(--accent-green); }
+.result-title p { font-size: 13px; color: var(--text-secondary); margin: 0;}
+{% endblock %}
+
+{% block content %}
+<div class="panel scan-panel">
+    <div class="panel-title" style="margin-bottom: 5px; text-align: left;">Scan URL</div>
+    <p style="text-align: left;">Analyze a web address instantly using our machine learning models.</p>
+    
+    <div class="input-group">
+        <input type="text" id="urlInput" placeholder="https://example.com/login" onkeypress="if(event.key === 'Enter') checkUrl()">
+        <button onclick="checkUrl()" id="scanBtn"><i class="fa-solid fa-shield-virus"></i> Scan</button>
+    </div>
+
+    <div id="result-box" class="result-box">
+        <div class="result-header">
+            <div class="result-icon" id="res-icon">
+                <i class="fa-solid fa-shield-check"></i>
+            </div>
+            <div class="result-title">
+                <h3 id="res-title">Safe</h3>
+                <p id="res-subtitle">This URL is not a phishing threat.</p>
+            </div>
+        </div>
+        <div style="margin-top: 15px; font-size: 13px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text-secondary)">Scanned URL:</span>
+                <span style="color: #fff; word-break: break-all;" id="res-url">example.com</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary)">Status:</span>
+                <span id="res-status" style="font-weight: 500;">Verified</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function checkUrl() {
+    const urlInput = document.getElementById('urlInput');
+    let url = urlInput.value;
+    if (!url) {
+        alert('Please enter a URL to scan');
+        return;
+    }
+    
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+    }
+    
+    const btn = document.getElementById('scanBtn');
+    const resultBox = document.getElementById('result-box');
+    const resIcon = document.getElementById('res-icon');
+    const resTitle = document.getElementById('res-title');
+    const resSubtitle = document.getElementById('res-subtitle');
+    const resUrl = document.getElementById('res-url');
+    const resStatus = document.getElementById('res-status');
+    
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Scanning';
+    btn.disabled = true;
+
+    fetch('/post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `URL=${encodeURIComponent(url)}`
+    })
+    .then(response => response.text())
+    .then(data => {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result-box';
+        resUrl.textContent = url;
+
+        if (parseInt(data) == 1) { // Suspicious
+            resultBox.classList.add('malicious');
+            resIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            resTitle.textContent = 'Suspicious';
+            resSubtitle.textContent = 'This URL exhibits suspicious characteristics.';
+            resStatus.textContent = 'Potentially Unsafe';
+            resStatus.style.color = 'var(--accent-red)';
+        } else if (parseInt(data) == 0) { // Safe
+            resultBox.classList.add('safe');
+            resIcon.innerHTML = '<i class="fa-solid fa-shield-check"></i>';
+            resTitle.textContent = 'Safe';
+            resSubtitle.textContent = 'This URL is not a known phishing threat.';
+            resStatus.textContent = 'Verified Safe';
+            resStatus.style.color = 'var(--accent-green)';
+        } else if (parseInt(data) == -1) { // Phishing
+            resultBox.classList.add('malicious');
+            resIcon.innerHTML = '<i class="fa-solid fa-shield-virus"></i>';
+            resTitle.textContent = 'Malicious';
+            resSubtitle.textContent = 'This URL is identified as a Phishing Website.';
+            resStatus.textContent = 'High Risk';
+            resStatus.style.color = 'var(--accent-red)';
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('An error occurred while scanning the URL.');
+    })
+    .finally(() => {
+        btn.innerHTML = '<i class="fa-solid fa-shield-virus"></i> Scan';
+        btn.disabled = false;
+        urlInput.value = '';
+    });
+}
+</script>
+{% endblock %}

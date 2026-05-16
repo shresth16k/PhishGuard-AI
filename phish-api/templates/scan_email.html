@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block title %}Scan Email/SMS{% endblock %}
+{% block subtitle %}Analyze email or SMS text content to detect spam and phishing patterns.{% endblock %}
+
+{% block styles %}
+.scan-panel { max-width: 600px; margin: 0 auto; }
+.scan-panel p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; margin-bottom: 20px; }
+textarea { width: 100%; background-color: var(--bg-main); border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; color: #fff; font-size: 14px; outline: none; resize: vertical; min-height: 150px; margin-bottom: 20px; }
+textarea:focus { border-color: var(--accent-blue); }
+.btn-primary { background-color: var(--accent-blue); color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;}
+.btn-primary:hover { background-color: var(--accent-blue-hover); }
+
+/* Results Box */
+.result-box { background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: none; text-align: left; margin-top: 20px;}
+.result-box.malicious { border-color: rgba(239, 68, 68, 0.5); background-color: rgba(239, 68, 68, 0.05); }
+.result-box.safe { border-color: rgba(16, 185, 129, 0.5); background-color: rgba(16, 185, 129, 0.05); }
+
+.result-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+.result-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.result-box.malicious .result-icon { background-color: var(--accent-red-bg); color: var(--accent-red); }
+.result-box.safe .result-icon { background-color: var(--accent-green-bg); color: var(--accent-green); }
+.result-title h3 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.result-box.malicious .result-title h3 { color: var(--accent-red); }
+.result-box.safe .result-title h3 { color: var(--accent-green); }
+.result-title p { font-size: 13px; color: var(--text-secondary); margin: 0;}
+{% endblock %}
+
+{% block content %}
+<div class="panel scan-panel">
+    <div class="panel-title" style="margin-bottom: 5px;">Scan Email Content</div>
+    <p>Paste your email or SMS content here to classify it as Spam/Phishing or Safe.</p>
+    
+    <textarea id="emailInput" placeholder="Dear Customer, your account has been compromised..."></textarea>
+    <button onclick="checkEmail()" id="scanBtn" class="btn-primary"><i class="fa-solid fa-envelope"></i> Analyze Content</button>
+
+    <div id="result-box" class="result-box">
+        <div class="result-header">
+            <div class="result-icon" id="res-icon">
+                <i class="fa-solid fa-shield-check"></i>
+            </div>
+            <div class="result-title">
+                <h3 id="res-title">Safe</h3>
+                <p id="res-subtitle">This message is safe.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function checkEmail() {
+    const emailInput = document.getElementById('emailInput');
+    let content = emailInput.value;
+    if (!content.trim()) {
+        alert('Please enter some content to scan');
+        return;
+    }
+    
+    const btn = document.getElementById('scanBtn');
+    const resultBox = document.getElementById('result-box');
+    const resIcon = document.getElementById('res-icon');
+    const resTitle = document.getElementById('res-title');
+    const resSubtitle = document.getElementById('res-subtitle');
+    
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...';
+    btn.disabled = true;
+
+    fetch('/scan_email_api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `content=${encodeURIComponent(content)}`
+    })
+    .then(response => response.text())
+    .then(data => {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result-box';
+
+        if (data === "1") { 
+            resultBox.classList.add('malicious');
+            resIcon.innerHTML = '<i class="fa-solid fa-shield-virus"></i>';
+            resTitle.textContent = 'Spam / Phishing';
+            resSubtitle.textContent = 'This message contains malicious or spam patterns.';
+        } else if (data === "0") {
+            resultBox.classList.add('safe');
+            resIcon.innerHTML = '<i class="fa-solid fa-shield-check"></i>';
+            resTitle.textContent = 'Safe';
+            resSubtitle.textContent = 'This message appears to be safe.';
+        } else {
+            alert('Failed to analyze. Did you install NLTK dependencies properly?');
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('An error occurred while scanning.');
+    })
+    .finally(() => {
+        btn.innerHTML = '<i class="fa-solid fa-envelope"></i> Analyze Content';
+        btn.disabled = false;
+        emailInput.value = '';
+    });
+}
+</script>
+{% endblock %}

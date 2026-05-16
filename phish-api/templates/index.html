@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard AI Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-main: #0B101E;
+            --bg-panel: #151A29;
+            --bg-panel-hover: #1f2937;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-red: #ef4444;
+            --accent-red-bg: rgba(239, 68, 68, 0.1);
+            --accent-green: #10b981;
+            --accent-green-bg: rgba(16, 185, 129, 0.1);
+            --border-color: #1e293b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; }
+        .logo-section { display: flex; align-items: center; padding: 0 24px 30px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .logo-section i { font-size: 24px; color: var(--accent-blue); margin-right: 12px; }
+        .logo-section h2 { font-size: 18px; font-weight: 600; }
+        .logo-section h2 span { color: var(--accent-blue); }
+        
+        .nav-item { padding: 12px 24px; display: flex; align-items: center; color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: 0.2s; cursor: pointer; }
+        .nav-item i { width: 20px; margin-right: 12px; font-size: 16px; text-align: center; }
+        .nav-item:hover { color: var(--text-primary); background-color: rgba(255,255,255,0.02); }
+        .nav-item.active { background-color: var(--accent-blue); color: #fff; border-radius: 6px; margin: 0 12px; padding: 12px; }
+        
+        .pro-banner { margin: auto 20px 20px; padding: 20px; background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.05)); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px; text-align: center; }
+        .pro-banner h4 { font-size: 14px; margin-bottom: 8px; color: #fff; }
+        .pro-banner p { font-size: 12px; color: var(--text-secondary); margin-bottom: 15px; }
+        .btn-pro { background-color: var(--accent-blue); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; }
+
+        /* Main Content */
+        .main-content { flex: 1; overflow-y: auto; padding: 30px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .welcome h1 { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+        .welcome p { color: var(--text-secondary); font-size: 14px; }
+        
+        .user-profile { display: flex; align-items: center; gap: 15px; }
+        .user-profile .notify { width: 40px; height: 40px; border-radius: 50%; background-color: var(--bg-panel); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); cursor: pointer; }
+        .user-profile .profile-btn { display: flex; align-items: center; gap: 10px; background-color: var(--bg-panel); padding: 6px 16px 6px 6px; border-radius: 20px; border: 1px solid var(--border-color); cursor: pointer; }
+        .user-profile .profile-btn img { width: 28px; height: 28px; border-radius: 50%; }
+        .user-profile .profile-btn span { font-size: 14px; font-weight: 500; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background-color: var(--bg-panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-icon.blue { background-color: rgba(59,130,246,0.1); color: var(--accent-blue); }
+        .stat-icon.red { background-color: var(--accent-red-bg); color: var(--accent-red); }
+        .stat-icon.green { background-color: var(--accent-green-bg); color: var(--accent-green); }
+        .stat-icon.shield { background-color: rgba(59,130,246,0.1); color: var(--accent-blue); }
+        .stat-details h3 { font-size: 13px; color: var(--text-secondary); font-weight: 500; margin-bottom: 4px; }
+        .stat-details .value { font-size: 22px; font-weight: 600; }
+        .stat-details .trend { font-size: 12px; margin-top: 4px; }
+        .trend.up { color: var(--accent-green); }
+        .trend.down { color: var(--accent-red); }
+
+        /* Layout Grid */
+        .bento-grid { display: grid; grid-template-columns: 2fr 1.2fr; gap: 25px; }
+        .left-col { display: flex; flex-direction: column; gap: 25px; }
+        .right-col { display: flex; flex-direction: column; gap: 25px; }
+
+        .panel { background-color: var(--bg-panel); border-radius: 12px; border: 1px solid var(--border-color); padding: 24px; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .panel-title { font-size: 16px; font-weight: 600; }
+
+        /* Scan Panel Specifics */
+        .scan-panel { text-align: center; }
+        .scan-panel p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; margin-bottom: 20px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        .input-group input { flex: 1; background-color: var(--bg-main); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
+        .input-group input:focus { border-color: var(--accent-blue); }
+        .input-group button { background-color: var(--accent-blue); color: #fff; border: none; padding: 0 24px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .input-group button:hover { background-color: var(--accent-blue-hover); }
+
+        /* Results Box */
+        .result-box { background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; display: none; text-align: left; }
+        .result-box.malicious { border-color: rgba(239, 68, 68, 0.5); background-color: rgba(239, 68, 68, 0.05); }
+        .result-box.safe { border-color: rgba(16, 185, 129, 0.5); background-color: rgba(16, 185, 129, 0.05); }
+        
+        .result-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .result-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .result-box.malicious .result-icon { background-color: var(--accent-red-bg); color: var(--accent-red); }
+        .result-box.safe .result-icon { background-color: var(--accent-green-bg); color: var(--accent-green); }
+        .result-title h3 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .result-box.malicious .result-title h3 { color: var(--accent-red); }
+        .result-box.safe .result-title h3 { color: var(--accent-green); }
+        .result-title p { font-size: 13px; color: var(--text-secondary); margin: 0;}
+
+        /* Charts */
+        .chart-container { height: 250px; position: relative; }
+        .donut-container { height: 200px; position: relative; display: flex; justify-content: center; }
+
+        /* Recent Scans Table */
+        .recent-scans { width: 100%; border-collapse: collapse; }
+        .recent-scans th { text-align: left; padding: 12px; font-size: 12px; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); font-weight: 500; }
+        .recent-scans td { padding: 12px; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+        .recent-scans tr:last-child td { border-bottom: none; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+        .badge.safe { background-color: var(--accent-green-bg); color: var(--accent-green); }
+        .badge.malicious { background-color: var(--accent-red-bg); color: var(--accent-red); }
+        .url-text { color: var(--text-primary); max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo-section">
+            <i class="fa-solid fa-shield-halved"></i>
+            <h2>PhishGuard <span>AI</span></h2>
+        </div>
+        <nav>
+            <div class="nav-item active"><i class="fa-solid fa-house"></i> Dashboard</div>
+            <div class="nav-item"><i class="fa-solid fa-envelope"></i> Scan Email</div>
+            <div class="nav-item"><i class="fa-solid fa-link"></i> Scan URL</div>
+            <div class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Threat History</div>
+            <div class="nav-item"><i class="fa-solid fa-chart-pie"></i> Reports</div>
+            <div class="nav-item"><i class="fa-solid fa-shield-virus"></i> Real-time Protection</div>
+            <div class="nav-item"><i class="fa-solid fa-gear"></i> Settings</div>
+            <div class="nav-item"><i class="fa-solid fa-code"></i> API Docs</div>
+            <div class="nav-item"><i class="fa-regular fa-circle-question"></i> Help & Support</div>
+        </nav>
+        
+        <div class="pro-banner">
+            <h4><i class="fa-solid fa-crown" style="color: #fbbf24; margin-right: 5px;"></i> Upgrade to Pro</h4>
+            <p>Unlock advanced protection and premium features.</p>
+            <button class="btn-pro">Upgrade Now</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <div class="welcome">
+                <h1>Welcome back, Shresth 👋</h1>
+                <p>Here's what's happening with your security.</p>
+            </div>
+            <div class="user-profile">
+                <div class="notify"><i class="fa-regular fa-bell"></i></div>
+                <div class="profile-btn">
+                    <img src="https://ui-avatars.com/api/?name=Shresth+Kumar&background=2563eb&color=fff" alt="User">
+                    <span>Shresth <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 5px; color: #94a3b8;"></i></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                <div class="stat-details">
+                    <h3>Total Scans</h3>
+                    <div class="value" id="tot-scans">1,248</div>
+                    <div class="trend up"><i class="fa-solid fa-arrow-trend-up"></i> 18.6% this week</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red"><i class="fa-solid fa-shield-virus"></i></div>
+                <div class="stat-details">
+                    <h3>Threats Detected</h3>
+                    <div class="value" id="tot-threats">237</div>
+                    <div class="trend up"><i class="fa-solid fa-arrow-trend-up"></i> 23.4% this week</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fa-solid fa-shield-check"></i></div>
+                <div class="stat-details">
+                    <h3>Safe Items</h3>
+                    <div class="value" id="tot-safe">1,011</div>
+                    <div class="trend up"><i class="fa-solid fa-arrow-trend-up"></i> 15.3% this week</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon shield"><i class="fa-solid fa-shield"></i></div>
+                <div class="stat-details">
+                    <h3>Protection Active</h3>
+                    <div class="value">Real-time</div>
+                    <div class="trend" style="color: var(--text-secondary)">All systems protected</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bento-grid">
+            <div class="left-col">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Threat Overview</div>
+                        <select style="background: var(--bg-main); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 6px; outline: none;">
+                            <option>This Week</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="threatChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Recent Scans</div>
+                        <a href="#" style="color: var(--accent-blue); font-size: 13px; text-decoration: none;">View All Scans <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <table class="recent-scans">
+                        <thead>
+                            <tr>
+                                <th>Target</th>
+                                <th>Result</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table">
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <i class="fa-solid fa-link" style="color: var(--text-secondary)"></i>
+                                        <div>
+                                            <div style="font-weight: 500;">Suspicious Login Attempt</div>
+                                            <div style="font-size: 11px; color: var(--text-secondary)">secure-login-update.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge malicious">Malicious</span></td>
+                                <td style="color: var(--text-secondary)">2 min ago</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <i class="fa-solid fa-envelope" style="color: var(--text-secondary)"></i>
+                                        <div>
+                                            <div style="font-weight: 500;">Verify Your Account Now</div>
+                                            <div style="font-size: 11px; color: var(--text-secondary)">support@secure-login.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge malicious">Malicious</span></td>
+                                <td style="color: var(--text-secondary)">15 min ago</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <i class="fa-solid fa-envelope" style="color: var(--text-secondary)"></i>
+                                        <div>
+                                            <div style="font-weight: 500;">Meeting Schedule Update</div>
+                                            <div style="font-size: 11px; color: var(--text-secondary)">team@company.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge safe">Safe</span></td>
+                                <td style="color: var(--text-secondary)">45 min ago</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="panel scan-panel">
+                    <div class="panel-title" style="margin-bottom: 5px; text-align: left;">Scan URL</div>
+                    <p style="text-align: left;">Check if a link is safe, suspicious or malicious.</p>
+                    
+                    <div class="input-group">
+                        <input type="text" id="urlInput" placeholder="https://secure-login-verification.com/update" onkeypress="if(event.key === 'Enter') checkUrl()">
+                        <button onclick="checkUrl()" id="scanBtn"><i class="fa-solid fa-shield-virus"></i> Scan</button>
+                    </div>
+
+                    <div id="result-box" class="result-box">
+                        <div class="result-header">
+                            <div class="result-icon" id="res-icon">
+                                <i class="fa-solid fa-shield-check"></i>
+                            </div>
+                            <div class="result-title">
+                                <h3 id="res-title">Safe</h3>
+                                <p id="res-subtitle">This URL is not a phishing threat.</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-secondary)">Scanned Domain:</span>
+                                <span class="url-text" id="res-url">example.com</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-secondary)">Status:</span>
+                                <span id="res-status" style="font-weight: 500;">Verified</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">Threat Distribution</div>
+                    <div class="donut-container">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data states
+        let totalScans = 1248;
+        let threats = 237;
+        let safeItems = 1011;
+
+        // Charts Initialization
+        const ctx = document.getElementById('threatChart').getContext('2d');
+        
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(168, 85, 247, 0.4)');
+        gradient.addColorStop(1, 'rgba(168, 85, 247, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['12 May', '13 May', '14 May', '15 May', '16 May', '17 May', '18 May'],
+                datasets: [{
+                    label: 'Threats Detected',
+                    data: [65, 80, 120, 156, 110, 140, 90],
+                    borderColor: '#a855f7',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#a855f7',
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
+
+        const ctx2 = document.getElementById('distributionChart').getContext('2d');
+        const distChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Phishing Email', 'Malicious URL', 'Suspicious', 'Others'],
+                datasets: [{
+                    data: [52, 27, 13, 8],
+                    backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#10b981'],
+                    borderWidth: 0,
+                    cutout: '75%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#94a3b8', font: { size: 12 }, padding: 15, usePointStyle: true, boxWidth: 8 }
+                    }
+                }
+            }
+        });
+
+        // Scan Functionality
+        function checkUrl() {
+            const urlInput = document.getElementById('urlInput');
+            let url = urlInput.value;
+            if (!url) {
+                alert('Please enter a URL to scan');
+                return;
+            }
+            
+            // Add http schema if missing to prevent URL parse errors
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            
+            const btn = document.getElementById('scanBtn');
+            const resultBox = document.getElementById('result-box');
+            const resIcon = document.getElementById('res-icon');
+            const resTitle = document.getElementById('res-title');
+            const resSubtitle = document.getElementById('res-subtitle');
+            const resUrl = document.getElementById('res-url');
+            const resStatus = document.getElementById('res-status');
+            
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Scanning';
+            btn.disabled = true;
+
+            fetch('/post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `URL=${encodeURIComponent(url)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                resultBox.style.display = 'block';
+                resultBox.className = 'result-box'; // reset classes
+                
+                let shortUrl = url;
+                try {
+                    shortUrl = new URL(url).hostname;
+                } catch(e) {}
+                
+                resUrl.textContent = shortUrl;
+                resUrl.title = url;
+
+                totalScans++;
+                document.getElementById('tot-scans').innerText = totalScans.toLocaleString();
+
+                if (parseInt(data) == 1) { // Suspicious
+                    threats++;
+                    resultBox.classList.add('malicious');
+                    resIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                    resTitle.textContent = 'Suspicious';
+                    resSubtitle.textContent = 'This URL exhibits suspicious characteristics.';
+                    resStatus.textContent = 'Potentially Unsafe';
+                    resStatus.style.color = 'var(--accent-red)';
+                    addHistory(url, 'Suspicious', 'malicious');
+                    updateChart(13, 2); // increment suspicious metric
+                } else if (parseInt(data) == 0) { // Safe
+                    safeItems++;
+                    resultBox.classList.add('safe');
+                    resIcon.innerHTML = '<i class="fa-solid fa-shield-check"></i>';
+                    resTitle.textContent = 'Safe';
+                    resSubtitle.textContent = 'This URL is not a known phishing threat.';
+                    resStatus.textContent = 'Verified Safe';
+                    resStatus.style.color = 'var(--accent-green)';
+                    addHistory(url, 'Safe', 'safe');
+                } else if (parseInt(data) == -1) { // Phishing
+                    threats++;
+                    resultBox.classList.add('malicious');
+                    resIcon.innerHTML = '<i class="fa-solid fa-shield-virus"></i>';
+                    resTitle.textContent = 'Malicious';
+                    resSubtitle.textContent = 'This URL is identified as a Phishing Website.';
+                    resStatus.textContent = 'High Risk';
+                    resStatus.style.color = 'var(--accent-red)';
+                    addHistory(url, 'Malicious', 'malicious');
+                    updateChart(27, 1); // increment malicious metric
+                }
+                
+                document.getElementById('tot-threats').innerText = threats.toLocaleString();
+                document.getElementById('tot-safe').innerText = safeItems.toLocaleString();
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('An error occurred while scanning the URL.');
+            })
+            .finally(() => {
+                btn.innerHTML = '<i class="fa-solid fa-shield-virus"></i> Scan';
+                btn.disabled = false;
+                urlInput.value = '';
+            });
+        }
+
+        function addHistory(url, status, type) {
+            const tbody = document.getElementById('history-table');
+            const tr = document.createElement('tr');
+            
+            let shortUrl = url;
+            try {
+                shortUrl = new URL(url).hostname;
+            } catch(e) {}
+
+            tr.innerHTML = `
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-link" style="color: var(--text-secondary)"></i>
+                        <div>
+                            <div style="font-weight: 500;">Manual URL Scan</div>
+                            <div style="font-size: 11px; color: var(--text-secondary)" class="url-text" title="${url}">${shortUrl}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge ${type}">${status}</span></td>
+                <td style="color: var(--text-secondary)">Just now</td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+            if(tbody.children.length > 5) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+        
+        function updateChart(val, index) {
+            distChart.data.datasets[0].data[index] += 1;
+            distChart.update();
+        }
+    </script>
+</body>
+</html>
