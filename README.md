@@ -1,4 +1,6 @@
-<img src="https://media.giphy.com/media/K2tvILlPkiiX3gD7cl/giphy.gif" alt="GIF example">
+<div align="center">
+  <img src="frontend/icons/logo.png" alt="PhishGuard AI Logo" width="200">
+</div>
 
 <p><strong>-: AI-enabled Phishing link Detection and Alert System :-</strong></p>
 <h1>Table of content </h1>
