@@ -71,8 +71,8 @@ CORS(app)
 model = pickle.load(open('SVM_Model.pkl', 'rb'))
 
 try:
-    tfidf = pickle.load(open('../sms-email-spam-classifier-main/vectorizer.pkl','rb'))
-    email_model = pickle.load(open('../sms-email-spam-classifier-main/model.pkl','rb'))
+    tfidf = pickle.load(open('vectorizer.pkl','rb'))
+    email_model = pickle.load(open('email_model.pkl','rb'))
 except Exception as e:
     print("Email model not loaded:", e)
     tfidf = None
