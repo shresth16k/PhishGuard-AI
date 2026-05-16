@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="frontend/icons/logo.png" alt="PhishGuard AI Logo" width="200">
+  <img src="icons/logo.png" alt="PhishGuard AI Logo" width="200">
 </div>
 
 <p><strong>-: AI-enabled Phishing link Detection and Alert System :-</strong></p>
